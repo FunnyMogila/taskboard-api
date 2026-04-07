@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>chi Demo Server</title>
+  <style>
+    :root {
+      --bg: #f6f2ea;
+      --card: #fffaf0;
+      --ink: #1f2937;
+      --accent: #bf5b04;
+      --muted: #5b6472;
+      --border: #ead9c2;
+    }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top right, rgba(191, 91, 4, 0.16), transparent 28%),
+        linear-gradient(180deg, #f7f0e5 0%, var(--bg) 100%);
+      color: var(--ink);
+    }
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 20px 64px;
+    }
+    .card {
+      background: rgba(255, 250, 240, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(31, 41, 55, 0.08);
+      backdrop-filter: blur(4px);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1;
+    }
+    p, li, code {
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+    code {
+      background: #f3e6d5;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    ul {
+      padding-left: 18px;
+    }
+    .accent {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <h1><span class="accent">chi</span> demo server</h1>
+      <p>This static page is served by <code>http.FileServer</code>. Use the API endpoints to explore routing, CRUD, forms, uploads, and JWT-based auth.</p>
+      <ul>
+        <li><code>GET /health</code></li>
+        <li><code>POST /login</code> with <code>{"username":"alice","password":"wonderland"}</code></li>
+        <li><code>GET /api/v1/items</code></li>
+        <li><code>POST /submit-form</code> as <code>application/x-www-form-urlencoded</code></li>
+        <li><code>POST /upload</code> as <code>multipart/form-data</code></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
