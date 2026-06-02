@@ -1,90 +1,318 @@
-# Go chi demo server
+# TaskBoard API
 
-Учебный пример веб-сервера на Go с использованием `chi`. Проект показывает:
+TaskBoard API — учебный веб-сервис на Go для управления проектами, задачами, участниками проектов и комментариями.
 
-- базовый HTTP server setup;
-- middleware (`RequestID`, logging, recovery, timeout, real IP);
-- route groups и versioned API;
-- JSON CRUD без БД, на in-memory store;
-- JWT login и protected routes;
-- role-based authorization;
-- query params, path params и headers;
-- работу с `application/x-www-form-urlencoded`;
-- multipart file upload;
-- раздачу статических файлов;
-- graceful shutdown.
+Проект реализован как REST API с PostgreSQL, миграциями, бизнес-логикой, unit-тестами, интеграционным тестом и генерацией DTO-моделей из OpenAPI.
 
-## Run
+## Возможности
+
+* создание и получение пользователей;
+* создание и получение проектов;
+* добавление участников в проект;
+* закрытие проекта;
+* создание задач;
+* получение задач;
+* изменение статуса задач;
+* удаление задач;
+* добавление и получение комментариев к задачам.
+
+## Архитектура
+
+```text
+HTTP Handler
+    ↓
+Service
+    ↓
+Repository
+    ↓
+PostgreSQL
+```
+
+## Технологии
+
+* Go
+* Chi Router
+* PostgreSQL
+* pgxpool
+* Squirrel
+* Goose Migrations
+* Docker Compose
+* OpenAPI
+* oapi-codegen
+
+## Запуск базы данных
 
 ```bash
-go mod tidy
+docker compose up -d
+```
+
+## Применение миграций
+
+```bash
+goose -dir migrations postgres "postgres://postgres:postgres@localhost:5432/taskboard?sslmode=disable" up
+```
+
+## Запуск приложения
+
+```bash
 go run ./cmd/server
 ```
 
-Переменные окружения:
+После запуска сервер доступен по адресу:
 
-- `PORT` default: `8080`
-- `JWT_SECRET` default: `dev-secret-change-me`
+```text
+http://localhost:8080
+```
 
-## Demo users
-
-- `alice` / `wonderland` -> role `admin`
-- `bob` / `builder` -> role `user`
-
-## Endpoints
-
-- `GET /health`
-- `GET /ready`
-- `GET /static/`
-- `GET /request-info`
-- `POST /login`
-- `POST /submit-form`
-- `GET /api/v1/items`
-- `GET /api/v1/items/{itemID}`
-- `POST /api/v1/items`
-- `PUT /api/v1/items/{itemID}`
-- `PATCH /api/v1/items/{itemID}`
-- `DELETE /api/v1/items/{itemID}`
-- `GET /me`
-- `POST /upload`
-- `GET /admin/audit`
-
-## Example requests
+Проверка:
 
 ```bash
 curl http://localhost:8080/health
 ```
 
-```bash
-curl http://localhost:8080/api/v1/items?page=1&page_size=5&status=published
+## Основные endpoint'ы
+
+```text
+POST   /api/v1/users
+GET    /api/v1/users/{userID}
+
+POST   /api/v1/projects
+GET    /api/v1/projects
+GET    /api/v1/projects/{projectID}
+POST   /api/v1/projects/{projectID}/members
+PATCH  /api/v1/projects/{projectID}/close
+
+POST   /api/v1/tasks
+GET    /api/v1/tasks
+GET    /api/v1/tasks/{taskID}
+PATCH  /api/v1/tasks/{taskID}/status
+DELETE /api/v1/tasks/{taskID}
+
+POST   /api/v1/tasks/{taskID}/comments
+GET    /api/v1/tasks/{taskID}/comments
+```
+# Примеры запросов (PowerShell)
+
+## Проверка сервера
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/health" `
+-Method GET
 ```
 
-```bash
-curl -X POST http://localhost:8080/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"alice","password":"wonderland"}'
+---
+
+## Создание пользователя
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/users" `
+-Method POST `
+-ContentType "application/json" `
+-Body '{"name":"Miroslav","email":"miroslav@test.com"}'
 ```
 
-```bash
-curl -X POST http://localhost:8080/submit-form \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "name=Alex&email=alex@example.com&comments=Hello+from+form"
+---
+
+## Получение пользователя
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/users/1" `
+-Method GET
 ```
 
-```bash
-curl -X POST http://localhost:8080/upload \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "file=@README.md"
+---
+
+## Создание проекта
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/projects" `
+-Method POST `
+-ContentType "application/json" `
+-Body '{"name":"TaskBoard","description":"Go course project"}'
 ```
 
-```bash
-curl -X POST http://localhost:8080/api/v1/items \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Write docs",
-    "description": "Document the chi example server",
-    "status": "draft",
-    "tags": ["docs", "demo"]
-  }'
+---
+
+## Получение проекта
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/projects/1" `
+-Method GET
 ```
+
+---
+
+## Получение списка проектов
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/projects" `
+-Method GET
+```
+
+---
+
+## Добавление участника в проект
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/projects/1/members" `
+-Method POST `
+-ContentType "application/json" `
+-Body '{"user_id":1,"role":"member"}'
+```
+
+---
+
+## Создание задачи
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/tasks" `
+-Method POST `
+-ContentType "application/json" `
+-Body '{"project_id":1,"assignee_id":1,"title":"First task","description":"Test task"}'
+```
+
+---
+
+## Получение задачи
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/tasks/1" `
+-Method GET
+```
+
+---
+
+## Получение списка задач
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/tasks" `
+-Method GET
+```
+
+---
+
+## Перевод задачи в статус IN_PROGRESS
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/tasks/1/status" `
+-Method PATCH `
+-ContentType "application/json" `
+-Body '{"status":"in_progress"}'
+```
+
+---
+
+## Перевод задачи в статус DONE
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/tasks/1/status" `
+-Method PATCH `
+-ContentType "application/json" `
+-Body '{"status":"done"}'
+```
+
+---
+
+## Добавление комментария
+
+(создайте новую задачу, которая ещё не находится в статусе DONE)
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/tasks/2/comments" `
+-Method POST `
+-ContentType "application/json" `
+-Body '{"author_id":1,"text":"Looks good"}'
+```
+
+---
+
+## Получение комментариев задачи
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/tasks/2/comments" `
+-Method GET
+```
+
+---
+
+## Закрытие проекта
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/projects/1/close" `
+-Method PATCH
+```
+
+---
+
+## Проверка бизнес-правила: создание задачи в закрытом проекте
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/tasks" `
+-Method POST `
+-ContentType "application/json" `
+-Body '{"project_id":1,"assignee_id":1,"title":"Should fail","description":"Task in closed project"}'
+```
+
+Ожидаемый результат:
+
+```json
+{
+  "error": "project is closed"
+}
+```
+
+---
+
+## Удаление задачи
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/tasks/2" `
+-Method DELETE
+```
+
+---
+
+## Проверка удаления
+
+```powershell
+Invoke-RestMethod `
+-Uri "http://localhost:8080/api/v1/tasks/2" `
+-Method GET
+```
+
+Ожидаемый результат:
+
+```json
+{
+  "error": "resource not found"
+}
+```
+
+
+
+## Бизнес-правила
+
+* нельзя создать задачу в закрытом проекте;
+* нельзя назначить задачу пользователю, который не является участником проекта;
+* нельзя напрямую перевести задачу из `new` в `done`;
+* из `done` и `cancelled` задача не переводится в другие статусы;
+* нельзя добавить комментарий к задаче в статусе `done` или `cancelled`;
+* повторный email пользователя возвращает ошибку `409 Conflict`.
+
