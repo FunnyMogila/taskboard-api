@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"example.com/go-master-web-sample/internal/models"
+	"taskboard-api/internal/domain"
 )
 
 type Manager struct {
@@ -14,7 +14,9 @@ type Manager struct {
 }
 
 type Claims struct {
-	Role string `json:"role"`
+	UserID int64  `json:"user_id"`
+	Name   string `json:"name"`
+	Email  string `json:"email"`
 	jwt.RegisteredClaims
 }
 
@@ -22,11 +24,13 @@ func NewManager(secret string) *Manager {
 	return &Manager{secret: []byte(secret)}
 }
 
-func (m *Manager) IssueToken(user models.User) (string, error) {
+func (m *Manager) IssueToken(user domain.User) (string, error) {
 	claims := Claims{
-		Role: user.Role,
+		UserID: int64(user.ID),
+		Name:   user.Name,
+		Email:  user.Email,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   user.Username,
+			Subject:   user.Email,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(2 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},

@@ -2,33 +2,19 @@ package domain
 
 import "time"
 
-type Item struct {
-	ID          int       `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Status      string    `json:"status"`
-	Tags        []string  `json:"tags"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
+type ProjectID int64
 
-type CreateItemRequest struct {
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Status      string   `json:"status"`
-	Tags        []string `json:"tags"`
-}
+type ProjectStatus string
 
-type ReplaceItemRequest struct {
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Status      string   `json:"status"`
-	Tags        []string `json:"tags"`
-}
+const (
+	ProjectStatusActive ProjectStatus = "active"
+	ProjectStatusClosed ProjectStatus = "closed"
+)
 
-type PatchItemRequest struct {
-	Title       *string   `json:"title"`
-	Description *string   `json:"description"`
-	Status      *string   `json:"status"`
-	Tags        *[]string `json:"tags"`
+type Project struct {
+	ID          ProjectID
+	Name        string
+	Description string
+	Status      ProjectStatus
+	CreatedAt   time.Time
 }

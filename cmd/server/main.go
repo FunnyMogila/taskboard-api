@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"example.com/go-master-web-sample/internal/app"
-	"example.com/go-master-web-sample/internal/config"
+	"taskboard-api/internal/app"
+	"taskboard-api/internal/config"
 )
 
 func main() {
@@ -41,7 +41,12 @@ func main() {
 	defer cancel()
 
 	log.Println("shutting down server")
+
 	if err := httpServer.Shutdown(ctx); err != nil {
 		log.Fatalf("graceful shutdown failed: %v", err)
 	}
+
+	server.Close()
+
+	log.Println("server stopped")
 }

@@ -3,8 +3,9 @@ package config
 import "os"
 
 type Config struct {
-	Port      string
-	JWTSecret string
+	Port        string
+	JWTSecret   string
+	DatabaseURL string
 }
 
 func Load() Config {
@@ -18,9 +19,15 @@ func Load() Config {
 		secret = "dev-secret-change-me"
 	}
 
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://postgres:postgres@localhost:5432/taskboard?sslmode=disable"
+	}
+
 	return Config{
-		Port:      port,
-		JWTSecret: secret,
+		Port:        port,
+		JWTSecret:   secret,
+		DatabaseURL: dbURL,
 	}
 }
 

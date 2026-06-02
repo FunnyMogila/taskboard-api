@@ -1,27 +1,67 @@
 package app
 
 import (
+	"context"
 	"net/http"
+	"taskboard-api/internal/audit"
 	"time"
+
+	"taskboard-api/internal/config"
+	"taskboard-api/internal/db"
+	"taskboard-api/internal/handler"
+	"taskboard-api/internal/repository"
+	"taskboard-api/internal/service"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
-
-	"example.com/go-master-web-sample/internal/auth"
-	"example.com/go-master-web-sample/internal/config"
-	"example.com/go-master-web-sample/internal/handlers"
-	appmw "example.com/go-master-web-sample/internal/middleware"
-	"example.com/go-master-web-sample/internal/store"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/sync/errgroup"
 )
 
 type Server struct {
 	router chi.Router
+	db     *pgxpool.Pool
+	cancel context.CancelFunc
+	group  *errgroup.Group
 }
 
 func NewServer(cfg config.Config) *Server {
-	store := store.NewMemoryStore()
-	authManager := auth.NewManager(cfg.JWTSecret)
-	handler := handlers.New(store, authManager)
+	ctx, cancel := context.WithCancel(context.Background())
+	group, ctx := errgroup.WithContext(ctx)
+
+	pool, err := db.NewPostgresPool(ctx, cfg.DatabaseURL)
+	if err != nil {
+		panic(err)
+	}
+
+	auditWorker := audit.NewWorker(100)
+
+	group.Go(func() error {
+		return auditWorker.Run(ctx)
+	})
+
+	auditWorker.Publish(audit.Event{
+		Type:    "server_started",
+		Payload: "taskboard api started",
+	})
+
+	userRepository := repository.NewUserRepository(pool)
+	projectRepository := repository.NewProjectRepository(pool)
+	taskRepository := repository.NewTaskRepository(pool)
+	commentRepository := repository.NewCommentRepository(pool)
+
+	userService := service.NewUserService(userRepository, auditWorker)
+	projectService := service.NewProjectService(projectRepository, auditWorker)
+	taskService := service.NewTaskService(
+		taskRepository,
+		commentRepository,
+		projectRepository,
+		auditWorker,
+	)
+
+	userHandler := handler.NewUserHandler(userService)
+	projectHandler := handler.NewProjectHandler(projectService)
+	taskHandler := handler.NewTaskHandler(taskService)
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -31,47 +71,37 @@ func NewServer(cfg config.Config) *Server {
 	r.Use(chimw.Timeout(30 * time.Second))
 	r.Use(jsonContentType)
 
-	fileServer := http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
-
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/static/", http.StatusTemporaryRedirect)
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
 	})
-	r.Handle("/static/*", fileServer)
-
-	r.Get("/health", handler.Health)
-	r.Get("/ready", handler.Ready)
-	r.Post("/login", handler.Login)
-	r.Get("/request-info", handler.RequestInfo)
-	r.Post("/submit-form", handler.EchoForm)
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Route("/items", func(r chi.Router) {
-			r.Get("/", handler.ListItems)
-			r.Get("/{itemID}", handler.GetItem)
+		r.Post("/users", userHandler.Create)
+		r.Get("/users/{userID}", userHandler.GetByID)
 
-			r.Group(func(r chi.Router) {
-				r.Use(appmw.RequireAuth(authManager))
-				r.Post("/", handler.CreateItem)
-				r.Put("/{itemID}", handler.ReplaceItem)
-				r.Patch("/{itemID}", handler.PatchItem)
-				r.Delete("/{itemID}", handler.DeleteItem)
-			})
-		})
+		r.Post("/projects", projectHandler.Create)
+		r.Get("/projects", projectHandler.List)
+		r.Get("/projects/{projectID}", projectHandler.GetByID)
+		r.Post("/projects/{projectID}/members", projectHandler.AddMember)
+		r.Patch("/projects/{projectID}/close", projectHandler.Close)
+
+		r.Post("/tasks", taskHandler.Create)
+		r.Get("/tasks", taskHandler.List)
+		r.Get("/tasks/{taskID}", taskHandler.GetByID)
+		r.Patch("/tasks/{taskID}/status", taskHandler.UpdateStatus)
+		r.Delete("/tasks/{taskID}", taskHandler.Delete)
+
+		r.Post("/tasks/{taskID}/comments", taskHandler.AddComment)
+		r.Get("/tasks/{taskID}/comments", taskHandler.ListComments)
 	})
 
-	r.Group(func(r chi.Router) {
-		r.Use(appmw.RequireAuth(authManager))
-		r.Get("/me", handler.Me)
-		r.Post("/upload", handler.UploadFile)
-	})
-
-	r.Route("/admin", func(r chi.Router) {
-		r.Use(appmw.RequireAuth(authManager))
-		r.Use(appmw.RequireRole("admin"))
-		r.Get("/audit", handler.AdminAudit)
-	})
-
-	return &Server{router: r}
+	return &Server{
+		router: r,
+		db:     pool,
+		cancel: cancel,
+		group:  group,
+	}
 }
 
 func (s *Server) Router() http.Handler {
@@ -83,4 +113,18 @@ func jsonContentType(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) Close() {
+	if s.cancel != nil {
+		s.cancel()
+	}
+
+	if s.group != nil {
+		_ = s.group.Wait()
+	}
+
+	if s.db != nil {
+		s.db.Close()
+	}
 }

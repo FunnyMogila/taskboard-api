@@ -1,13 +1,12 @@
-package models
+package domain
+
+import "time"
+
+type UserID int64
 
 type User struct {
-	ID       int    `json:"id"`
-	Username string `json:"username"`
-	Password string `json:"-"`
-	Role     string `json:"role"`
-}
-
-type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	ID        UserID
+	Name      string
+	Email     string
+	CreatedAt time.Time
 }
