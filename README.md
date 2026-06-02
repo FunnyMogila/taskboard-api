@@ -1,9 +1,5 @@
 # TaskBoard API
 
-TaskBoard API — учебный веб-сервис на Go для управления проектами, задачами, участниками проектов и комментариями.
-
-Проект реализован как REST API с PostgreSQL, миграциями, бизнес-логикой, unit-тестами, интеграционным тестом и генерацией DTO-моделей из OpenAPI.
-
 ## Возможности
 
 * создание и получение пользователей;
@@ -39,6 +35,32 @@ PostgreSQL
 * Docker Compose
 * OpenAPI
 * oapi-codegen
+
+### Сборка проекта
+
+```powershell
+go build ./...
+```
+
+---
+
+### Запуск unit-тестов
+
+```powershell
+go test ./internal/service
+```
+
+### Запуск интеграционного теста
+
+```powershell
+go test -tags=integration ./internal/app
+```
+
+### Запуск всех тестов
+
+```powershell
+go test ./...
+```
 
 ## Запуск базы данных
 
