@@ -42,7 +42,6 @@ PostgreSQL
 go build ./...
 ```
 
----
 
 ### Запуск unit-тестов
 
