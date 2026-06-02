@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"encoding/json"
@@ -13,19 +13,19 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 
-	"example.com/go-master-web-sample/internal/auth"
-	"example.com/go-master-web-sample/internal/httpx"
-	appmw "example.com/go-master-web-sample/internal/middleware"
-	"example.com/go-master-web-sample/internal/models"
-	"example.com/go-master-web-sample/internal/store"
+	"taskboard-api/internal/auth"
+	"taskboard-api/internal/domain"
+	"taskboard-api/internal/httpx"
+	appmw "taskboard-api/internal/middleware"
+	"taskboard-api/internal/repository"
 )
 
 type Handler struct {
-	store *store.MemoryStore
+	store *repository.MemoryStore
 	auth  *auth.Manager
 }
 
-func New(store *store.MemoryStore, auth *auth.Manager) *Handler {
+func New(store *repository.MemoryStore, auth *auth.Manager) *Handler {
 	return &Handler{store: store, auth: auth}
 }
 
@@ -42,7 +42,7 @@ func (h *Handler) Ready(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-	var req models.LoginRequest
+	var req domain.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid json body", err.Error())
 		return
@@ -131,7 +131,7 @@ func (h *Handler) GetItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CreateItem(w http.ResponseWriter, r *http.Request) {
-	var req models.CreateItemRequest
+	var req domain.CreateItemRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid json body", err.Error())
 		return
@@ -160,7 +160,7 @@ func (h *Handler) ReplaceItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req models.ReplaceItemRequest
+	var req domain.ReplaceItemRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid json body", err.Error())
 		return
@@ -185,7 +185,7 @@ func (h *Handler) PatchItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req models.PatchItemRequest
+	var req domain.PatchItemRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid json body", err.Error())
 		return
@@ -304,9 +304,9 @@ func validateRequiredFields(title, description string) error {
 
 func handleItemWriteError(w http.ResponseWriter, err error) {
 	switch err {
-	case store.ErrItemNotFound:
+	case repository.ErrItemNotFound:
 		httpx.Error(w, http.StatusNotFound, "item not found", nil)
-	case store.ErrInvalidItemState:
+	case repository.ErrInvalidItemState:
 		httpx.Error(w, http.StatusBadRequest, err.Error(), nil)
 	default:
 		httpx.Error(w, http.StatusInternalServerError, "unexpected storage error", err.Error())
