@@ -2,8 +2,9 @@ package service
 
 import (
 	"context"
-	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"taskboard-api/internal/domain"
 	"taskboard-api/internal/errs"
@@ -93,9 +94,7 @@ func TestTaskService_Create_ClosedProject(t *testing.T) {
 		Title:     "Test task",
 	})
 
-	if !errors.Is(err, errs.ErrProjectClosed) {
-		t.Fatalf("expected ErrProjectClosed, got %v", err)
-	}
+	assert.ErrorIs(t, err, errs.ErrProjectClosed)
 }
 
 func TestTaskService_Create_NotProjectMember(t *testing.T) {
@@ -126,9 +125,7 @@ func TestTaskService_Create_NotProjectMember(t *testing.T) {
 		Title:      "Test task",
 	})
 
-	if !errors.Is(err, errs.ErrForbidden) {
-		t.Fatalf("expected ErrForbidden, got %v", err)
-	}
+	assert.ErrorIs(t, err, errs.ErrForbidden)
 }
 
 func TestTaskService_UpdateStatus_InvalidTransition(t *testing.T) {
@@ -160,9 +157,7 @@ func TestTaskService_UpdateStatus_InvalidTransition(t *testing.T) {
 
 	err := service.UpdateStatus(context.Background(), 1, domain.TaskStatusInProgress)
 
-	if !errors.Is(err, errs.ErrInvalidTransition) {
-		t.Fatalf("expected ErrInvalidTransition, got %v", err)
-	}
+	assert.ErrorIs(t, err, errs.ErrInvalidTransition)
 }
 
 func TestTaskService_AddComment_DoneTask(t *testing.T) {
@@ -188,7 +183,5 @@ func TestTaskService_AddComment_DoneTask(t *testing.T) {
 		Text:     "Comment",
 	})
 
-	if !errors.Is(err, errs.ErrInvalidTransition) {
-		t.Fatalf("expected ErrInvalidTransition, got %v", err)
-	}
+	assert.ErrorIs(t, err, errs.ErrInvalidTransition)
 }

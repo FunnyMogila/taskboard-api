@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
-	"errors"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"taskboard-api/internal/domain"
 	"taskboard-api/internal/errs"
-	"testing"
 )
 
 type fakeProjectRepository struct {
@@ -79,9 +81,7 @@ func TestProjectService_Create_EmptyName(t *testing.T) {
 		domain.Project{},
 	)
 
-	if !errors.Is(err, errs.ErrInvalidInput) {
-		t.Fatalf("expected ErrInvalidInput, got %v", err)
-	}
+	assert.ErrorIs(t, err, errs.ErrInvalidInput)
 }
 
 func TestProjectService_Create_Success(t *testing.T) {
@@ -91,7 +91,7 @@ func TestProjectService_Create_Success(t *testing.T) {
 			project domain.Project,
 		) (domain.Project, error) {
 
-			project.ID = 1
+			project.ID = domain.ProjectID(1)
 			return project, nil
 		},
 	}
@@ -105,13 +105,8 @@ func TestProjectService_Create_Success(t *testing.T) {
 		},
 	)
 
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	if project.ID != 1 {
-		t.Fatalf("expected ID=1, got %d", project.ID)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, domain.ProjectID(1), project.ID)
 }
 
 func TestProjectService_GetByID_InvalidID(t *testing.T) {
@@ -120,9 +115,7 @@ func TestProjectService_GetByID_InvalidID(t *testing.T) {
 
 	_, err := service.GetByID(context.Background(), 0)
 
-	if !errors.Is(err, errs.ErrInvalidInput) {
-		t.Fatalf("expected ErrInvalidInput, got %v", err)
-	}
+	assert.ErrorIs(t, err, errs.ErrInvalidInput)
 }
 
 func TestProjectService_Close_InvalidID(t *testing.T) {
@@ -131,9 +124,7 @@ func TestProjectService_Close_InvalidID(t *testing.T) {
 
 	err := service.Close(context.Background(), 0)
 
-	if !errors.Is(err, errs.ErrInvalidInput) {
-		t.Fatalf("expected ErrInvalidInput, got %v", err)
-	}
+	assert.ErrorIs(t, err, errs.ErrInvalidInput)
 }
 
 func TestProjectService_AddMember_InvalidUser(t *testing.T) {
@@ -144,10 +135,8 @@ func TestProjectService_AddMember_InvalidUser(t *testing.T) {
 		context.Background(),
 		1,
 		0,
-		domain.ProjectRole("member"),
+		domain.ProjectRoleMember,
 	)
 
-	if !errors.Is(err, errs.ErrInvalidInput) {
-		t.Fatalf("expected ErrInvalidInput, got %v", err)
-	}
+	assert.ErrorIs(t, err, errs.ErrInvalidInput)
 }

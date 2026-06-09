@@ -2,14 +2,14 @@ package service
 
 import (
 	"context"
-	"errors"
-	"taskboard-api/internal/mocks"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 
 	"taskboard-api/internal/domain"
 	"taskboard-api/internal/errs"
-
-	"github.com/golang/mock/gomock"
+	"taskboard-api/internal/service/mocks"
 )
 
 type fakeUserRepository struct {
@@ -37,7 +37,7 @@ func TestUserService_Create_Success(t *testing.T) {
 	}
 
 	expected := input
-	expected.ID = 1
+	expected.ID = domain.UserID(1)
 
 	repo.EXPECT().
 		Create(gomock.Any(), input).
@@ -46,13 +46,9 @@ func TestUserService_Create_Success(t *testing.T) {
 	service := NewUserService(repo, nil)
 
 	user, err := service.Create(context.Background(), input)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
 
-	if user.ID != 1 {
-		t.Fatalf("expected user ID 1, got %d", user.ID)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, domain.UserID(1), user.ID)
 }
 
 func TestUserService_Create_EmptyName(t *testing.T) {
@@ -64,9 +60,7 @@ func TestUserService_Create_EmptyName(t *testing.T) {
 		Email: "test@test.com",
 	})
 
-	if !errors.Is(err, errs.ErrInvalidInput) {
-		t.Fatalf("expected ErrInvalidInput, got %v", err)
-	}
+	assert.ErrorIs(t, err, errs.ErrInvalidInput)
 }
 
 func TestUserService_Create_EmptyEmail(t *testing.T) {
@@ -78,9 +72,7 @@ func TestUserService_Create_EmptyEmail(t *testing.T) {
 		Email: "",
 	})
 
-	if !errors.Is(err, errs.ErrInvalidInput) {
-		t.Fatalf("expected ErrInvalidInput, got %v", err)
-	}
+	assert.ErrorIs(t, err, errs.ErrInvalidInput)
 }
 
 func TestUserService_GetByID_Success(t *testing.T) {
@@ -96,14 +88,10 @@ func TestUserService_GetByID_Success(t *testing.T) {
 
 	service := NewUserService(repo, nil)
 
-	user, err := service.GetByID(context.Background(), 1)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
+	user, err := service.GetByID(context.Background(), domain.UserID(1))
 
-	if user.ID != 1 {
-		t.Fatalf("expected user ID 1, got %d", user.ID)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, domain.UserID(1), user.ID)
 }
 
 func TestUserService_GetByID_InvalidID(t *testing.T) {
@@ -112,7 +100,5 @@ func TestUserService_GetByID_InvalidID(t *testing.T) {
 
 	_, err := service.GetByID(context.Background(), 0)
 
-	if !errors.Is(err, errs.ErrInvalidInput) {
-		t.Fatalf("expected ErrInvalidInput, got %v", err)
-	}
+	assert.ErrorIs(t, err, errs.ErrInvalidInput)
 }

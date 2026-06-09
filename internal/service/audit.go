@@ -2,6 +2,6 @@ package service
 
 import "taskboard-api/internal/audit"
 
-type AuditPublisher interface {
+type auditPublisher interface {
 	Publish(event audit.Event)
 }

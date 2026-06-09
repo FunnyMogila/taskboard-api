@@ -2,23 +2,23 @@ package service
 
 import (
 	"context"
-	"taskboard-api/internal/audit"
-	"taskboard-api/internal/errs"
 
+	"taskboard-api/internal/audit"
 	"taskboard-api/internal/domain"
+	"taskboard-api/internal/errs"
 )
 
-type UserRepository interface {
+type userRepository interface {
 	Create(ctx context.Context, user domain.User) (domain.User, error)
 	GetByID(ctx context.Context, id domain.UserID) (domain.User, error)
 }
 
 type UserService struct {
-	repository UserRepository
-	audit      AuditPublisher
+	repository userRepository
+	audit      auditPublisher
 }
 
-func NewUserService(repository UserRepository, audit AuditPublisher) *UserService {
+func NewUserService(repository userRepository, audit auditPublisher) *UserService {
 	return &UserService{
 		repository: repository,
 		audit:      audit,

@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 
+	"taskboard-api/internal/domain"
+	"taskboard-api/internal/errs"
+
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"taskboard-api/internal/domain"
-	"taskboard-api/internal/errs"
 )
 
 type UserRepository struct {
@@ -47,7 +48,7 @@ func (r *UserRepository) Create(ctx context.Context, user domain.User) (domain.U
 	)
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return domain.User{}, fmt.Errorf("create user: %w", errs.ErrAlreadyExists)
 		}
 

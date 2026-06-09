@@ -3,12 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
+
 	"taskboard-api/internal/audit"
 	"taskboard-api/internal/domain"
 	"taskboard-api/internal/errs"
 )
 
-type TaskRepository interface {
+type taskRepository interface {
 	Create(ctx context.Context, task domain.Task) (domain.Task, error)
 	GetByID(ctx context.Context, id domain.TaskID) (domain.Task, error)
 	List(ctx context.Context) ([]domain.Task, error)
@@ -16,23 +17,23 @@ type TaskRepository interface {
 	Delete(ctx context.Context, id domain.TaskID) error
 }
 
-type CommentRepository interface {
+type commentRepository interface {
 	Create(ctx context.Context, comment domain.Comment) (domain.Comment, error)
 	ListByTask(ctx context.Context, taskID domain.TaskID) ([]domain.Comment, error)
 }
 
 type TaskService struct {
-	taskRepository    TaskRepository
-	commentRepository CommentRepository
-	projectRepository ProjectRepository
-	audit             AuditPublisher
+	taskRepository    taskRepository
+	commentRepository commentRepository
+	projectRepository projectRepository
+	audit             auditPublisher
 }
 
 func NewTaskService(
-	taskRepository TaskRepository,
-	commentRepository CommentRepository,
-	projectRepository ProjectRepository,
-	audit AuditPublisher,
+	taskRepository taskRepository,
+	commentRepository commentRepository,
+	projectRepository projectRepository,
+	audit auditPublisher,
 ) *TaskService {
 	return &TaskService{
 		taskRepository:    taskRepository,
@@ -103,7 +104,6 @@ func (s *TaskService) UpdateStatus(
 	id domain.TaskID,
 	newStatus domain.TaskStatus,
 ) error {
-
 	if id <= 0 {
 		return errs.ErrInvalidInput
 	}
